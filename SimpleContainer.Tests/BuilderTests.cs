@@ -32,15 +32,19 @@ namespace SimpleContainer.Tests
 
 		class DepCycle3 { public DepCycle3(DepCycle4 d, Dep1 d1) { } }
 		class DepCycle4 { public DepCycle4(DepCycle3 d) { } }
-		class DepMultipleCtor
+		class DepMultipleCtor1
 		{
 			[PreferredConstructor]
-			public DepMultipleCtor(Dep1 d1)
+			public DepMultipleCtor1(Dep1 d1) { }
+			public DepMultipleCtor1(Dep1 d, Dep2 d2) { }
+		}
+		class DepMultipleCtor2
+		{
+			public DepMultipleCtor2(Dep1 d1)
 			{
+				throw new Exception("Wrong constructor selected");
 			}
-			public DepMultipleCtor(Dep1 d, Dep2 d2)
-			{
-			}
+			public DepMultipleCtor2(Dep1 d, Dep2 d2) { }
 		}
 
 		[Fact]
@@ -253,10 +257,59 @@ namespace SimpleContainer.Tests
 		public void PreferredConstructor()
 		{
 			var builder = new Builder();
-			builder.Register<DepMultipleCtor>();
+			builder.Register<DepMultipleCtor1>();
 			builder.Register<Dep1>();
 
 			Assert.DoesNotThrow(() => builder.Build());
+		}
+
+		[Fact]
+		public void MostParamsConstructor()
+		{
+			var builder = new Builder();
+			builder.Register<DepMultipleCtor2>();
+			builder.Register<Dep1>();
+			builder.Register<Dep2>();
+
+			Assert.DoesNotThrow(() => builder.Build());
+		}
+
+		[Fact]
+		public void BuilderReturnsContainer()
+		{
+			var builder = new Builder();
+			builder.Register<DepMultipleCtor2>();
+			builder.Register<Dep1>();
+			builder.Register<Dep2>();
+
+			Assert.Same(builder.Build(), builder.Container);
+		}
+
+		[Fact]
+		public void BuildCanBeCalledOnce()
+		{
+			var builder = new Builder();
+			builder.Register<DepMultipleCtor2>();
+			builder.Register<Dep1>();
+			builder.Register<Dep2>();
+
+			Assert.Same(builder.Build(), builder.Container);
+
+			Assert.Throws<ContainerAlreadyBuiltException>(() => builder.Build());
+		}
+
+		[Fact]
+		public void BuildMustBeCalledBeforeContainer()
+		{
+			var builder = new Builder();
+			builder.Register<DepMultipleCtor2>();
+			builder.Register<Dep1>();
+			builder.Register<Dep2>();
+
+			Assert.Throws<ContainerNotBuiltException>(() => builder.Container);
+
+			Assert.Same(builder.Build(), builder.Container);
+
 		}
 	}
 }

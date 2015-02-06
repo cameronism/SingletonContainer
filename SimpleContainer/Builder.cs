@@ -127,10 +127,7 @@ namespace SimpleContainer
 					return ctor;
 				}
 
-				if (ctors.Length == 0)
-				{
-					throw new KeyNotFoundException();
-				}
+				// let it throw if ctors.Length < 1
 
 				ctor = new KeyValuePair<ConstructorInfo, ParameterInfo[]>(ctors[0], ctors[0].GetParameters());
 
@@ -158,13 +155,13 @@ namespace SimpleContainer
 
 			public T Resolve<T>()
 			{
-				Registration reg;
-				if (!_Builder._Registrations.TryGetValue(typeof(T), out reg))
+				object instance;
+				if (!_Builder._Instances.TryGetValue(typeof(T), out instance) || instance == null)
 				{
 					throw new ResolutionFailedException();
 				}
 
-				return (T)reg.Instance;
+				return (T)instance;
 			}
 
 			public IList<T> OfType<T>() where T : class
@@ -214,6 +211,7 @@ namespace SimpleContainer
 		#region members
 		object _Gate = new object();
 		Dictionary<Type, Registration> _Registrations = new Dictionary<Type, Registration>();
+		Dictionary<Type, object> _Instances = new Dictionary<Type, object>();
 		LinkedList<Registration> _Unique = new LinkedList<Registration>();
 		ContainerImp _Container;
 		#endregion
@@ -252,10 +250,6 @@ namespace SimpleContainer
 				VerifyAlreadyBuilt();
 				return _Container;
 			}
-		}
-		
-		public void Dispose()
-		{
 		}
 
 		bool TryCreate(RegistrationConstructor ctor, object[] parameters)
@@ -328,9 +322,13 @@ namespace SimpleContainer
 
 		public IContainer Build()
 		{
+			VerifyNotBuilt();
+			var instances = new Dictionary<Type, object>(_Registrations.Count);
 			ContainerImp result;
+
 			lock (_Gate)
 			{
+				// double check
 				VerifyNotBuilt();
 
 				var needMore = new LinkedList<RegistrationConstructor>();
@@ -358,8 +356,16 @@ namespace SimpleContainer
 					Build(needMore);
 				}
 
+				foreach (var kvp in _Registrations)
+				{
+					instances[kvp.Key] = kvp.Value.Instance;
+				}
+
+
 				result = new ContainerImp(this);
 				_Container = result;
+				_Instances = instances;
+				_Registrations = null;
 			}
 			return result;
 		}
