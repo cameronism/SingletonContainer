@@ -20,6 +20,11 @@ namespace SimpleContainer
 
 	public class DependencyCycleException : Exception
 	{
+		public IReadOnlyList<Type> Cycle { get; private set; }
+		public DependencyCycleException(IReadOnlyList<Type> cycle)
+		{
+			Cycle = cycle;
+		}
 	}
 
 	public class ContainerNotBuiltException : Exception
@@ -40,6 +45,12 @@ namespace SimpleContainer
 
 	public class MissingDependencyException : Exception
 	{
+		public IReadOnlyList<Type> Missing { get; private set; }
+
+		public MissingDependencyException(IReadOnlyList<Type> missing)
+		{
+			Missing = missing;
+		}
 	}
 
 	public class Builder
@@ -60,18 +71,18 @@ namespace SimpleContainer
 		class Registration : IRegistration
 		{
 			public object Instance;
+			public readonly Type Type;
 			readonly Builder _Builder;
-			readonly Type _Type;
 
 			public Registration(Builder builder, Type type)
 			{
 				this._Builder = builder;
-				this._Type = type;
+				this.Type = type;
 			}
 
 			public IRegistration As<T>()
 			{
-				if (!typeof(T).IsAssignableFrom(_Type))
+				if (!typeof(T).IsAssignableFrom(Type))
 				{
 					throw new RegistrationFailedException();
 				}
@@ -90,14 +101,14 @@ namespace SimpleContainer
 				lock (_Builder._Gate)
 				{
 					_Builder.VerifyNotBuilt();
-					_Builder._Registrations.Remove(_Type);
+					_Builder._Registrations.Remove(Type);
 				}
 				return this;
 			}
 
 			public KeyValuePair<ConstructorInfo, ParameterInfo[]> Create()
 			{
-				var ctors = _Type.GetConstructors();
+				var ctors = Type.GetConstructors();
 				KeyValuePair<ConstructorInfo, ParameterInfo[]> ctor;
 				if (ctors.Length == 1)
 				{
@@ -250,6 +261,27 @@ namespace SimpleContainer
 			return true;
 		}
 
+		Exception GetSpecificError(LinkedList<RegistrationConstructor> theRest)
+		{
+			var missing = new HashSet<Type>();
+
+			foreach (var ctor in theRest)
+			{
+				foreach (var param in ctor.Parameters)
+				{
+					if (!_Registrations.ContainsKey(param.ParameterType))
+					{
+						missing.Add(param.ParameterType);
+					}
+				}
+
+			}
+
+			return missing.Any() ? (Exception)
+				new MissingDependencyException(missing.ToList()) :
+				new DependencyCycleException(theRest.Select(c => c.Registration.Type).ToList());
+		}
+
 		void Build(LinkedList<RegistrationConstructor> theRest)
 		{
 			int count = theRest.Count;
@@ -277,7 +309,7 @@ namespace SimpleContainer
 
 				if (theRest.Count == count)
 				{
-					throw new DependencyCycleException();
+					throw GetSpecificError(theRest);
 				}
 
 				node = theRest.First;

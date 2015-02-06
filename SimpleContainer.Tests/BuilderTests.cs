@@ -30,6 +30,8 @@ namespace SimpleContainer.Tests
 		class DepJ { public DepJ(DepI d) { } }
 		class DepK { public DepK(DepJ d) { } }
 
+		class DepCycle3 { public DepCycle3(DepCycle4 d, Dep1 d1) { } }
+		class DepCycle4 { public DepCycle4(DepCycle3 d) { } }
 
 		[Fact]
 		public void Register()
@@ -199,7 +201,50 @@ namespace SimpleContainer.Tests
 			builder.Register<DepB>();
 			builder.Register<Dep1>();
 
-			Assert.Throws<MissingDependencyException>(() => builder.Build());
+			MissingDependencyException mde = null;
+
+			Assert.Throws<MissingDependencyException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (MissingDependencyException e)
+				{
+					mde = e;
+					throw;
+				}
+			});
+
+			Assert.Equal(new[] { typeof(DepA) }, mde.Missing, EqualityComparer<Type>.Default);
+		}
+
+		[Fact]
+		public void CycleExceptionDetails()
+		{
+			var builder = new Builder();
+			builder.Register<DepCycle4>();
+			builder.Register<DepCycle3>();
+			builder.Register<Dep1>();
+
+			DependencyCycleException dce = null;
+
+			Assert.Throws<DependencyCycleException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (DependencyCycleException e)
+				{
+					dce = e;
+					throw;
+				}
+			});
+
+			Assert.Equal(
+				new[] { typeof(DepCycle3), typeof(DepCycle4) },
+				dce.Cycle.OrderBy(t => t.Name));
 		}
 	}
 }
