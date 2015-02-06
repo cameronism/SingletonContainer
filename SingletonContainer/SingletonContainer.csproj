@@ -39,10 +39,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Builder.cs" />
+    <Compile Include="ContainerBuilder.cs" />
+    <Compile Include="Exceptions\BuilderException.cs" />
+    <Compile Include="Exceptions\DependencyException.cs" />
+    <Compile Include="Exceptions\ResolutionFailedException.cs" />
+    <Compile Include="IContainer.cs" />
     <Compile Include="PreferredConstructorAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

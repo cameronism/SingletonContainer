@@ -4,63 +4,17 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using SingletonContainer.Exceptions;
 
 namespace SingletonContainer
 {
-	public interface IContainer
-	{
-		T Resolve<T>();
-
-		/// <summary>
-		/// Returns all registrants castable to T
-		/// FIXME need to specify or document the order
-		/// </summary>
-		IList<T> OfType<T>() where T : class;
-	}
-
-	public class DependencyCycleException : Exception
-	{
-		public IReadOnlyList<Type> Cycle { get; private set; }
-		public DependencyCycleException(IReadOnlyList<Type> cycle)
-		{
-			Cycle = cycle;
-		}
-	}
-
-	public class ContainerNotBuiltException : Exception
-	{
-	}
-
-	public class ContainerAlreadyBuiltException : Exception
-	{
-	}
-
-	public class ResolutionFailedException : Exception
-	{
-	}
-
-	public class RegistrationFailedException : Exception
-	{
-	}
-
-	public class MissingDependencyException : Exception
-	{
-		public IReadOnlyList<Type> Missing { get; private set; }
-
-		public MissingDependencyException(IReadOnlyList<Type> missing)
-		{
-			Missing = missing;
-		}
-	}
-
-	public class Builder
+	public class ContainerBuilder
 	{
 		#region inner types
 		public interface IRegistration
 		{
 			IRegistration As<T>();
 
-			// TODO look at what autofac calls this
 			/// <summary>
 			/// Makes current registration only available as type(s) registered with As() calls
 			/// </summary>
@@ -72,9 +26,9 @@ namespace SingletonContainer
 		{
 			public object Instance;
 			public readonly Type Type;
-			readonly Builder _Builder;
+			readonly ContainerBuilder _Builder;
 
-			public Registration(Builder builder, Type type)
+			public Registration(ContainerBuilder builder, Type type)
 			{
 				this._Builder = builder;
 				this.Type = type;
@@ -146,9 +100,9 @@ namespace SingletonContainer
 
 		class ContainerImp : IContainer
 		{
-			readonly Builder _Builder;
+			readonly ContainerBuilder _Builder;
 
-			public ContainerImp(Builder builder)
+			public ContainerImp(ContainerBuilder builder)
 			{
 				_Builder = builder;
 			}
@@ -281,9 +235,11 @@ namespace SingletonContainer
 
 			}
 
+			var incomplete = theRest.Select(c => c.Registration.Type).ToList();
+
 			return missing.Any() ? (Exception)
-				new MissingDependencyException(missing.ToList()) :
-				new DependencyCycleException(theRest.Select(c => c.Registration.Type).ToList());
+				new DependencyMissingException(missing.ToList(), incomplete) :
+				new DependencyCycleException(incomplete);
 		}
 
 		void Build(LinkedList<RegistrationConstructor> theRest)

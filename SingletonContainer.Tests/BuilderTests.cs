@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SingletonContainer.Exceptions;
 using Xunit;
 
 namespace SingletonContainer.Tests
@@ -50,7 +51,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void Register()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			var reg = builder.Register<Dep1>();
 			Assert.NotNull(reg);
 
@@ -65,7 +66,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void Singletons()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<Dep1>();
 			var container = builder.Build();
 
@@ -77,7 +78,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void Abstractions()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<Dep1>().As<IDep>();
 			var container = builder.Build();
 
@@ -89,7 +90,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void RejectBadAbstractions()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 
 			Assert.Throws<RegistrationFailedException>(() =>
 			{
@@ -100,7 +101,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void RegistrationWithoutSelf()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<Dep1>().As<IDep>().WithoutSelf();
 			var container = builder.Build();
 
@@ -114,7 +115,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void OfType()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<Dep1>().As<IDep>();
 			builder.Register<Dep2>();
 			var container = builder.Build();
@@ -131,7 +132,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void Dependencies()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<Dep3>();
 			builder.Register<Dep1>();
 			var container = builder.Build();
@@ -143,7 +144,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void DependencyCycle()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepCycle1>();
 			builder.Register<DepCycle2>();
 
@@ -153,7 +154,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void DependencyChain()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepK>();
 			builder.Register<DepA>();
 			builder.Register<DepJ>();
@@ -177,7 +178,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void OrderOfType()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepK>();
 			builder.Register<DepA>();
 			builder.Register<DepJ>();
@@ -203,19 +204,19 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void MissingDependency()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepB>();
 			builder.Register<Dep1>();
 
-			MissingDependencyException mde = null;
+			DependencyMissingException mde = null;
 
-			Assert.Throws<MissingDependencyException>(() =>
+			Assert.Throws<DependencyMissingException>(() =>
 			{
 				try
 				{
 					builder.Build();
 				}
-				catch (MissingDependencyException e)
+				catch (DependencyMissingException e)
 				{
 					mde = e;
 					throw;
@@ -228,7 +229,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void CycleExceptionDetails()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepCycle4>();
 			builder.Register<DepCycle3>();
 			builder.Register<Dep1>();
@@ -250,13 +251,13 @@ namespace SingletonContainer.Tests
 
 			Assert.Equal(
 				new[] { typeof(DepCycle3), typeof(DepCycle4) },
-				dce.Cycle.OrderBy(t => t.Name));
+				dce.Incomplete.OrderBy(t => t.Name));
 		}
 
 		[Fact]
 		public void PreferredConstructor()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepMultipleCtor1>();
 			builder.Register<Dep1>();
 
@@ -266,7 +267,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void MostParamsConstructor()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepMultipleCtor2>();
 			builder.Register<Dep1>();
 			builder.Register<Dep2>();
@@ -277,7 +278,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void BuilderReturnsContainer()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepMultipleCtor2>();
 			builder.Register<Dep1>();
 			builder.Register<Dep2>();
@@ -288,7 +289,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void BuildCanBeCalledOnce()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepMultipleCtor2>();
 			builder.Register<Dep1>();
 			builder.Register<Dep2>();
@@ -301,7 +302,7 @@ namespace SingletonContainer.Tests
 		[Fact]
 		public void BuildMustBeCalledBeforeContainer()
 		{
-			var builder = new Builder();
+			var builder = new ContainerBuilder();
 			builder.Register<DepMultipleCtor2>();
 			builder.Register<Dep1>();
 			builder.Register<Dep2>();
