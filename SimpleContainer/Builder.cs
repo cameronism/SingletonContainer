@@ -109,6 +109,12 @@ namespace SimpleContainer
 			public KeyValuePair<ConstructorInfo, ParameterInfo[]> Create()
 			{
 				var ctors = Type.GetConstructors();
+				var preferred = ctors.FirstOrDefault(c => c.GetCustomAttributes(typeof(PreferredConstructorAttribute)).Any());
+				if (preferred != null)
+				{
+					ctors = new[] { preferred };
+				}
+
 				KeyValuePair<ConstructorInfo, ParameterInfo[]> ctor;
 				if (ctors.Length == 1)
 				{
@@ -222,17 +228,21 @@ namespace SimpleContainer
 			if (_Container == null) throw new ContainerNotBuiltException();
 		}
 
-		public IRegistration Register<T>()
+		public IRegistration Register(Type type)
 		{
-			var reg = new Registration(this, typeof(T));
+			var reg = new Registration(this, type);
 			var node = new LinkedListNode<Registration>(reg);
 			lock (_Gate)
 			{
 				VerifyNotBuilt();
-				_Registrations[typeof(T)] = reg;
+				_Registrations[type] = reg;
 				_Unique.AddLast(node);
 			}
 			return reg;
+		}
+		public IRegistration Register<T>()
+		{
+			return Register(typeof(T));
 		}
 		
 		public IContainer Container

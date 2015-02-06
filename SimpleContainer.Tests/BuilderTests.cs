@@ -32,6 +32,16 @@ namespace SimpleContainer.Tests
 
 		class DepCycle3 { public DepCycle3(DepCycle4 d, Dep1 d1) { } }
 		class DepCycle4 { public DepCycle4(DepCycle3 d) { } }
+		class DepMultipleCtor
+		{
+			[PreferredConstructor]
+			public DepMultipleCtor(Dep1 d1)
+			{
+			}
+			public DepMultipleCtor(Dep1 d, Dep2 d2)
+			{
+			}
+		}
 
 		[Fact]
 		public void Register()
@@ -245,6 +255,16 @@ namespace SimpleContainer.Tests
 			Assert.Equal(
 				new[] { typeof(DepCycle3), typeof(DepCycle4) },
 				dce.Cycle.OrderBy(t => t.Name));
+		}
+
+		[Fact]
+		public void PreferredConstructor()
+		{
+			var builder = new Builder();
+			builder.Register<DepMultipleCtor>();
+			builder.Register<Dep1>();
+
+			Assert.DoesNotThrow(() => builder.Build());
 		}
 	}
 }
