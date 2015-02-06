@@ -16,8 +16,8 @@ namespace SingletonContainer.Tests
 
 		class Dep3 { public Dep3(Dep1 d1) { } }
 
-		class DepCycle1 { public DepCycle1(DepCycle2 d2) { } }
-		class DepCycle2 { public DepCycle2(DepCycle1 d1) { } }
+		internal class DepCycle1 { public DepCycle1(DepCycle2 d2) { } }
+		internal class DepCycle2 { public DepCycle2(DepCycle1 d1) { } }
 
 		class DepA { public DepA(Dep1 d) { } }
 		class DepB { public DepB(DepA d) { } }

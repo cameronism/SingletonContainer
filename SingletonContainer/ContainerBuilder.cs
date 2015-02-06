@@ -232,12 +232,13 @@ namespace SingletonContainer
 						missing.Add(param.ParameterType);
 					}
 				}
-
 			}
 
-			var incomplete = theRest.Select(c => c.Registration.Type).ToList();
+			var incomplete = theRest
+				.Select(c => new KeyValuePair<Type, ParameterInfo[]>(c.Registration.Type, c.Parameters))
+				.ToList();
 
-			return missing.Any() ? (Exception)
+			return missing.Any() ? (DependencyException)
 				new DependencyMissingException(missing.ToList(), incomplete) :
 				new DependencyCycleException(incomplete);
 		}
