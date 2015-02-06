@@ -1,0 +1,12 @@
+*.suo
+*/obj/
+*/bin/
+packages/
+*.swp
+*.csproj.user
+*.txt.bak
+*.received.txt
+*.nupkg
+_.*
+*.psess
+TestResults/
