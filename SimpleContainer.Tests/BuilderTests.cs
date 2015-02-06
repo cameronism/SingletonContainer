@@ -50,9 +50,8 @@ namespace SimpleContainer.Tests
 			var reg = builder.Register<Dep1>();
 			Assert.NotNull(reg);
 
-			builder.Build();
+			var container = builder.Build();
 
-			var container = builder.Container;
 			Assert.NotNull(container);
 
 			var instance = container.Resolve<Dep1>();
@@ -64,8 +63,7 @@ namespace SimpleContainer.Tests
 		{
 			var builder = new Builder();
 			builder.Register<Dep1>();
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 
 			var instance1 = container.Resolve<Dep1>();
 			var instance2 = container.Resolve<Dep1>();
@@ -77,8 +75,7 @@ namespace SimpleContainer.Tests
 		{
 			var builder = new Builder();
 			builder.Register<Dep1>().As<IDep>();
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 
 			var instance1 = container.Resolve<Dep1>();
 			var instance2 = container.Resolve<IDep>();
@@ -101,8 +98,7 @@ namespace SimpleContainer.Tests
 		{
 			var builder = new Builder();
 			builder.Register<Dep1>().As<IDep>().WithoutSelf();
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 
 			Assert.NotNull(container.Resolve<IDep>());
 			Assert.Throws<ResolutionFailedException>(() =>
@@ -117,8 +113,7 @@ namespace SimpleContainer.Tests
 			var builder = new Builder();
 			builder.Register<Dep1>().As<IDep>();
 			builder.Register<Dep2>();
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 
 			var ideps = container.OfType<IDep>();
 
@@ -135,8 +130,7 @@ namespace SimpleContainer.Tests
 			var builder = new Builder();
 			builder.Register<Dep3>();
 			builder.Register<Dep1>();
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 
 			var d1 = container.Resolve<Dep1>();
 			var d3 = container.Resolve<Dep3>();
@@ -169,8 +163,7 @@ namespace SimpleContainer.Tests
 			builder.Register<DepH>();
 			builder.Register<Dep1>();
 
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 			var objects = container.OfType<object>();
 
 			Assert.Equal(12, objects.Count);
@@ -194,8 +187,7 @@ namespace SimpleContainer.Tests
 			builder.Register<DepH>();
 			builder.Register<Dep1>();
 
-			builder.Build();
-			var container = builder.Container;
+			var container = builder.Build();
 			var objects = container.OfType<object>();
 			var names = objects.Select(o => o.GetType().Name).ToList();
 

@@ -326,8 +326,9 @@ namespace SimpleContainer
 			}
 		}
 
-		public void Build()
+		public IContainer Build()
 		{
+			ContainerImp result;
 			lock (_Gate)
 			{
 				VerifyNotBuilt();
@@ -357,8 +358,10 @@ namespace SimpleContainer
 					Build(needMore);
 				}
 
-				_Container = new ContainerImp(this);
+				result = new ContainerImp(this);
+				_Container = result;
 			}
+			return result;
 		}
 	}
 }
