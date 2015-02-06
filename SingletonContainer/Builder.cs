@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SimpleContainer
+namespace SingletonContainer
 {
 	public interface IContainer
 	{

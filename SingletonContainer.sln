@@ -3,14 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.30723.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleContainer", "SimpleContainer\SimpleContainer.csproj", "{391F3C86-2C7C-430C-8F71-ED0695C2DB7E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingletonContainer", "SingletonContainer\SingletonContainer.csproj", "{391F3C86-2C7C-430C-8F71-ED0695C2DB7E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{DB4EBC3F-ECF7-4BD1-9DBB-3CBC972E33CC}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\packages.config = .nuget\packages.config
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleContainer.Tests", "SimpleContainer.Tests\SimpleContainer.Tests.csproj", "{9E189075-811E-43A3-B827-DF25BA3AA80C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingletonContainer.Tests", "SingletonContainer.Tests\SingletonContainer.Tests.csproj", "{9E189075-811E-43A3-B827-DF25BA3AA80C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

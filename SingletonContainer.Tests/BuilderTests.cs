@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace SimpleContainer.Tests
+namespace SingletonContainer.Tests
 {
 	public class BuilderTests
 	{

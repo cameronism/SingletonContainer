@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SimpleContainer
+namespace SingletonContainer
 {
 	[AttributeUsage(AttributeTargets.Constructor, AllowMultiple=false)]
 	public class PreferredConstructorAttribute : Attribute
