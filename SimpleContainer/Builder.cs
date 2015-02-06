@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,13 +13,13 @@ namespace SimpleContainer
 
 		/// <summary>
 		/// Returns all registrants castable to T
+		/// FIXME need to specify or document the order
 		/// </summary>
-		IList<T> OfType<T>();
+		IList<T> OfType<T>() where T : class;
 	}
 
 	public class DependencyCycleException : Exception
 	{
-
 	}
 
 	public class ContainerNotBuiltException : Exception
@@ -35,7 +36,10 @@ namespace SimpleContainer
 
 	public class RegistrationFailedException : Exception
 	{
+	}
 
+	public class MissingDependencyException : Exception
+	{
 	}
 
 	public class Builder
@@ -55,7 +59,6 @@ namespace SimpleContainer
 
 		class Registration : IRegistration
 		{
-
 			public object Instance;
 			readonly Builder _Builder;
 			readonly Type _Type;
@@ -92,9 +95,38 @@ namespace SimpleContainer
 				return this;
 			}
 
-			public void Create()
+			public KeyValuePair<ConstructorInfo, ParameterInfo[]> Create()
 			{
-				if (Instance == null) Instance = Activator.CreateInstance(_Type);
+				var ctors = _Type.GetConstructors();
+				KeyValuePair<ConstructorInfo, ParameterInfo[]> ctor;
+				if (ctors.Length == 1)
+				{
+					ctor = new KeyValuePair<ConstructorInfo, ParameterInfo[]>(ctors[0], ctors[0].GetParameters());
+					if (ctor.Value.Length == 0)
+					{
+						Instance = ctor.Key.Invoke(null);
+						return default(KeyValuePair<ConstructorInfo, ParameterInfo[]>);
+					}
+					return ctor;
+				}
+
+				if (ctors.Length == 0)
+				{
+					throw new KeyNotFoundException();
+				}
+
+				ctor = new KeyValuePair<ConstructorInfo, ParameterInfo[]>(ctors[0], ctors[0].GetParameters());
+
+				for (int i = 1; i < ctors.Length; i++)
+				{
+					var current = new KeyValuePair<ConstructorInfo, ParameterInfo[]>(ctors[i], ctors[i].GetParameters());
+					if (current.Value.Length > ctor.Value.Length)
+					{
+						ctor = current;
+					}
+				}
+
+				return ctor;
 			}
 		}
 
@@ -106,28 +138,58 @@ namespace SimpleContainer
 			{
 				_Builder = builder;
 			}
+
 			public T Resolve<T>()
 			{
-				_Builder.VerifyAlreadyBuilt();
-
 				Registration reg;
-				lock (_Builder._Gate)
+				if (!_Builder._Registrations.TryGetValue(typeof(T), out reg))
 				{
-					_Builder._Registrations.TryGetValue(typeof(T), out reg);
+					throw new ResolutionFailedException();
 				}
-
-				if (reg == null) throw new ResolutionFailedException();
 
 				return (T)reg.Instance;
 			}
 
-
-			public IList<T> OfType<T>()
+			public IList<T> OfType<T>() where T : class
 			{
-				_Builder.VerifyAlreadyBuilt();
+				var matches = new List<T>(_Builder._Unique.Count);
+				foreach (var reg in _Builder._Unique)
+				{
+					var maybe = reg.Instance as T;
+					if (maybe != null)
+					{
+						matches.Add(maybe);
+					}
+				}
+				return matches;
+			}
+		}
 
-				var items = new Dictionary<Registration, T>(_Builder._Registrations.Count);
+		struct RegistrationConstructor
+		{
+			public readonly ConstructorInfo Constructor;
+			public readonly ParameterInfo[] Parameters;
+			public readonly Registration Registration;
 
+			public RegistrationConstructor(ConstructorInfo constructorInfo, ParameterInfo[] parameterInfo, Registration reg)
+			{
+				Constructor = constructorInfo;
+				Parameters = parameterInfo;
+				Registration = reg;
+			}
+
+			public object[] GetArray(List<object[]> cache)
+			{
+				var ix = Parameters.Length - 1;
+				while (cache.Count <= ix) cache.Add(null);
+
+				var result = cache[ix];
+				if (result == null)
+				{
+					result = new object[Parameters.Length];
+					cache[ix] = result;
+				}
+				return result;
 			}
 		}
 		#endregion
@@ -135,6 +197,7 @@ namespace SimpleContainer
 		#region members
 		object _Gate = new object();
 		Dictionary<Type, Registration> _Registrations = new Dictionary<Type, Registration>();
+		LinkedList<Registration> _Unique = new LinkedList<Registration>();
 		ContainerImp _Container;
 		#endregion
 
@@ -151,10 +214,12 @@ namespace SimpleContainer
 		public IRegistration Register<T>()
 		{
 			var reg = new Registration(this, typeof(T));
+			var node = new LinkedListNode<Registration>(reg);
 			lock (_Gate)
 			{
 				VerifyNotBuilt();
 				_Registrations[typeof(T)] = reg;
+				_Unique.AddLast(node);
 			}
 			return reg;
 		}
@@ -172,21 +237,85 @@ namespace SimpleContainer
 		{
 		}
 
+		bool TryCreate(RegistrationConstructor ctor, object[] parameters)
+		{
+			for (int i = 0; i < parameters.Length; i++)
+			{
+				Registration reg;
+				if (!_Registrations.TryGetValue(ctor.Parameters[i].ParameterType, out reg) || reg.Instance == null) return false;
+				parameters[i] = reg.Instance;
+			}
+
+			ctor.Registration.Instance = ctor.Constructor.Invoke(parameters);
+			return true;
+		}
+
+		void Build(LinkedList<RegistrationConstructor> theRest)
+		{
+			int count = theRest.Count;
+			var node = theRest.First;
+			var cache = new List<object[]>(16);
+
+			while (node != null)
+			{
+				while (node != null)
+				{
+					var ctor = node.Value;
+					if (TryCreate(ctor, ctor.GetArray(cache)))
+					{
+						_Unique.AddLast(ctor.Registration);
+
+						var toRemove = node;
+						node = node.Next;
+						theRest.Remove(toRemove);
+					}
+					else
+					{
+						node = node.Next;
+					}
+				}
+
+				if (theRest.Count == count)
+				{
+					throw new DependencyCycleException();
+				}
+
+				node = theRest.First;
+			}
+		}
+
 		public void Build()
 		{
 			lock (_Gate)
 			{
-				if (_Container != null)
+				VerifyNotBuilt();
+
+				var needMore = new LinkedList<RegistrationConstructor>();
+
+				var node = _Unique.First;
+				while (node != null)
 				{
-					throw new ContainerAlreadyBuiltException();
+					var ctor = node.Value.Create();
+					if (ctor.Key == null)
+					{
+						node = node.Next;
+					}
+					else
+					{
+						needMore.AddLast(new RegistrationConstructor(ctor.Key, ctor.Value, node.Value));
+
+						var toRemove = node;
+						node = node.Next;
+						_Unique.Remove(toRemove);
+					}
+				}
+
+				if (needMore.Count > 0)
+				{
+					Build(needMore);
 				}
 
 				_Container = new ContainerImp(this);
-
-				foreach (var reg in _Registrations.Values)
-				{
-					reg.Create();
-				}
 			}
 		}
 	}
