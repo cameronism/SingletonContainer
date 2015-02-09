@@ -40,7 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContainerBuilder.cs" />
-    <Compile Include="Exceptions\BuilderException.cs" />
+    <Compile Include="Exceptions\UsageException.cs" />
     <Compile Include="Exceptions\DependencyException.cs" />
     <Compile Include="Exceptions\ResolutionFailedException.cs" />
     <Compile Include="IContainer.cs" />
