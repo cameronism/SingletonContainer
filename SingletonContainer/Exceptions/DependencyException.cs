@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace SingletonContainer.Exceptions
 {
-	public abstract class DependencyException : Exception
+	public abstract class DependencyException : ContainerBuilderException
 	{
 		public IReadOnlyList<Type> Incomplete { get; private set; }
 		readonly IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> _Params;
 
-		protected DependencyException(IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete, string message = null) : base(GetMessage(incomplete, message))
+		protected DependencyException(IReadOnlyList<object> created, IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete, string message = null) : base(GetMessage(incomplete, message), created)
 		{
 			var theList = new Type[incomplete.Count];
 			for (int i = 0; i < incomplete.Count; i++)
@@ -70,7 +70,7 @@ namespace SingletonContainer.Exceptions
 
 	public class DependencyCycleException : DependencyException
 	{
-		public DependencyCycleException(IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete) : base(incomplete)
+		public DependencyCycleException(IReadOnlyList<object> created, IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete) : base(created, incomplete)
 		{
 		}
 	}
@@ -79,7 +79,7 @@ namespace SingletonContainer.Exceptions
 	{
 		public IReadOnlyList<Type> Missing { get; private set; }
 
-		public DependencyMissingException(IReadOnlyList<Type> missing, IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete) : base(incomplete, GetMessage(missing))
+		public DependencyMissingException(IReadOnlyList<object> created, IReadOnlyList<Type> missing, IReadOnlyList<KeyValuePair<Type, ParameterInfo[]>> incomplete) : base(created, incomplete, GetMessage(missing))
 		{
 			Missing = missing;
 		}

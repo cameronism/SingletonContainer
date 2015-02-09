@@ -105,5 +105,48 @@ namespace SingletonContainer.Tests
 			});
 			Assert.Equal(expected, dce.Message);
 		}
+
+		[Fact]
+		public void BuilderExceptionProvidesCreated()
+		{
+			var builder = new ContainerBuilder();
+			builder.Register<BuilderTests.DepK>();
+			builder.Register<BuilderTests.DepA>();
+			builder.Register<BuilderTests.DepI>();
+			builder.Register<BuilderTests.DepG>();
+			builder.Register<BuilderTests.DepF>();
+			builder.Register<BuilderTests.DepE>();
+			builder.Register<BuilderTests.DepD>();
+			builder.Register<BuilderTests.DepC>();
+			builder.Register<BuilderTests.DepB>();
+			builder.Register<BuilderTests.DepH>();
+			builder.Register<BuilderTests.Dep1>();
+
+
+			ContainerBuilderException dme = null;
+			Assert.Throws<DependencyMissingException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (DependencyMissingException e)
+				{
+					dme = e;
+					throw;
+				}
+			});
+
+			var created = dme.Created;
+			Assert.NotNull(created);
+			Assert.Equal(10, created.Count);
+			Assert.DoesNotContain(null, created);
+
+			var names = created.Select(o => o.GetType().Name).ToArray();
+			var sorted = names.OrderBy(n => n).ToArray();
+
+			// alphabetical order is correct instantiation order
+			Assert.Equal(sorted, names);
+		}
 	}
 }

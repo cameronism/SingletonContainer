@@ -11,25 +11,25 @@ namespace SingletonContainer.Tests
 	public class BuilderTests
 	{
 		interface IDep { }
-		class Dep1 : IDep {  }
-		class Dep2 : IDep {  }
+		internal class Dep1 : IDep {  }
+		internal class Dep2 : IDep {  }
 
-		class Dep3 { public Dep3(Dep1 d1) { } }
+		internal class Dep3 { public Dep3(Dep1 d1) { } }
 
 		internal class DepCycle1 { public DepCycle1(DepCycle2 d2) { } }
 		internal class DepCycle2 { public DepCycle2(DepCycle1 d1) { } }
 
-		class DepA { public DepA(Dep1 d) { } }
-		class DepB { public DepB(DepA d) { } }
-		class DepC { public DepC(DepB d) { } }
-		class DepD { public DepD(DepC d) { } }
-		class DepE { public DepE(DepD d) { } }
-		class DepF { public DepF(DepE d) { } }
-		class DepG { public DepG(DepF d) { } }
-		class DepH { public DepH(DepG d) { } }
-		class DepI { public DepI(DepH d) { } }
-		class DepJ { public DepJ(DepI d) { } }
-		class DepK { public DepK(DepJ d) { } }
+		internal class DepA { public DepA(Dep1 d) { } }
+		internal class DepB { public DepB(DepA d) { } }
+		internal class DepC { public DepC(DepB d) { } }
+		internal class DepD { public DepD(DepC d) { } }
+		internal class DepE { public DepE(DepD d) { } }
+		internal class DepF { public DepF(DepE d) { } }
+		internal class DepG { public DepG(DepF d) { } }
+		internal class DepH { public DepH(DepG d) { } }
+		internal class DepI { public DepI(DepH d) { } }
+		internal class DepJ { public DepJ(DepI d) { } }
+		internal class DepK { public DepK(DepJ d) { } }
 
 		class DepCycle3 { public DepCycle3(DepCycle4 d, Dep1 d1) { } }
 		class DepCycle4 { public DepCycle4(DepCycle3 d) { } }

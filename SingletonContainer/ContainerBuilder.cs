@@ -238,9 +238,14 @@ namespace SingletonContainer
 				.Select(c => new KeyValuePair<Type, ParameterInfo[]>(c.Registration.Type, c.Parameters))
 				.ToList();
 
+			var created = _Unique
+				.Select(r => r.Instance)
+				.Where(o => o != null)
+				.ToList();
+
 			return missing.Any() ? (DependencyException)
-				new DependencyMissingException(missing.ToList(), incomplete) :
-				new DependencyCycleException(incomplete);
+				new DependencyMissingException(created, missing.ToList(), incomplete) :
+				new DependencyCycleException(created, incomplete);
 		}
 
 		void Build(LinkedList<RegistrationConstructor> theRest)
@@ -273,6 +278,7 @@ namespace SingletonContainer
 					throw GetSpecificError(theRest);
 				}
 
+				count = theRest.Count;
 				node = theRest.First;
 			}
 		}
