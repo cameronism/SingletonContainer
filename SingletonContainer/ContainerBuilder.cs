@@ -75,7 +75,7 @@ namespace SingletonContainer
 					ctor = new KeyValuePair<ConstructorInfo, ParameterInfo[]>(ctors[0], ctors[0].GetParameters());
 					if (ctor.Value.Length == 0)
 					{
-						Instance = ctor.Key.Invoke(null);
+						Instance = _Builder.Invoke(ctor.Key, null, Type);
 						return default(KeyValuePair<ConstructorInfo, ParameterInfo[]>);
 					}
 					return ctor;
@@ -206,6 +206,23 @@ namespace SingletonContainer
 			}
 		}
 
+		object Invoke(ConstructorInfo ctor, object[] parameters, Type type)
+		{
+			try
+			{
+				return ctor.Invoke(parameters);
+			}
+			catch (TargetInvocationException e)
+			{
+				var created = _Unique
+					.Select(r => r.Instance)
+					.Where(o => o != null)
+					.ToList();
+
+				throw new ConstructorFaultedException(created, e.InnerException, type, ctor.GetParameters());
+			}
+		}
+
 		bool TryCreate(RegistrationConstructor ctor, object[] parameters)
 		{
 			for (int i = 0; i < parameters.Length; i++)
@@ -215,7 +232,7 @@ namespace SingletonContainer
 				parameters[i] = reg.Instance;
 			}
 
-			ctor.Registration.Instance = ctor.Constructor.Invoke(parameters);
+			ctor.Registration.Instance = Invoke(ctor.Constructor, parameters, ctor.Registration.Type);
 			return true;
 		}
 

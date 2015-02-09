@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -16,6 +17,13 @@ namespace SingletonContainer.Tests
 		class B { public B(int i, A a) { } }
 		class C<T> { public C(T t) { } }
 
+		class GoBoom
+		{
+			public GoBoom(BuilderTests.Dep1 d1)
+			{
+				throw new DirectoryNotFoundException("boom");
+			}
+		}
 
 		[Theory]
 		[InlineData(typeof(ExceptionTests), "SingletonContainer.Tests.ExceptionTests()")]
@@ -147,6 +155,40 @@ namespace SingletonContainer.Tests
 
 			// alphabetical order is correct instantiation order
 			Assert.Equal(sorted, names);
+		}
+
+		[Fact]
+		public void ConstructorFaultedException()
+		{
+			var builder = new ContainerBuilder();
+			builder.Register<GoBoom>();
+			builder.Register<BuilderTests.Dep1>();
+
+
+			ConstructorFaultedException dme = null;
+			Assert.Throws<ConstructorFaultedException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (ConstructorFaultedException e)
+				{
+					dme = e;
+					throw;
+				}
+			});
+
+
+			var created = dme.Created;
+			Assert.NotNull(created);
+			Assert.Equal(1, created.Count);
+			Assert.IsType(typeof(BuilderTests.Dep1), created[0]);
+			
+			Assert.Equal("SingletonContainer.Tests.ExceptionTests.GoBoom(SingletonContainer.Tests.BuilderTests.Dep1)", dme.Message);
+
+			Assert.NotNull(dme.InnerException);
+			Assert.IsType(typeof(DirectoryNotFoundException), dme.InnerException);
 		}
 	}
 }
