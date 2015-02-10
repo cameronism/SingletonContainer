@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>SingletonContainer</id>
+    <version>$version$</version>
+    <authors>cameronism</authors>
+    <owners>cameronism</owners>
+    <licenseUrl>http://opensource.org/licenses/Apache-2.0</licenseUrl>
+    <projectUrl>https://github.com/cameronism/SingletonContainer</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Simple IoC container for singletons</description>
+    <releaseNotes>Initial release</releaseNotes>
+    <copyright>Copyright 2015</copyright>
+    <tags>ioc singleton</tags>
+    <dependencies>
+    </dependencies>
+  </metadata>
+</package>
