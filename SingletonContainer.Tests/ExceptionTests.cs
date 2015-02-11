@@ -190,5 +190,33 @@ namespace SingletonContainer.Tests
 			Assert.NotNull(dme.InnerException);
 			Assert.IsType(typeof(DirectoryNotFoundException), dme.InnerException);
 		}
+
+		[Fact]
+		public void ExternalInstances()
+		{
+			var d1 = new BuilderTests.Dep1();
+			var builder = new ContainerBuilder();
+			builder.Register(d1);
+			builder.Register<BuilderTests.Dep3>();
+			builder.Register<BuilderTests.DepB>();
+
+			DependencyMissingException dme = null;
+
+			Assert.Throws<DependencyMissingException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (DependencyMissingException e)
+				{
+					dme = e;
+					throw;
+				}
+			});
+
+			Assert.Equal(1, dme.Created.Count);
+			Assert.IsType<BuilderTests.Dep3>(dme.Created[0]);
+		}
 	}
 }

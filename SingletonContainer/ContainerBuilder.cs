@@ -24,14 +24,18 @@ namespace SingletonContainer
 
 		class Registration : IRegistration
 		{
+			static KeyValuePair<ConstructorInfo, ParameterInfo[]> _None = default(KeyValuePair<ConstructorInfo, ParameterInfo[]>);
 			public object Instance;
 			public readonly Type Type;
+			public readonly bool ExternalOwned;
 			readonly ContainerBuilder _Builder;
 
-			public Registration(ContainerBuilder builder, Type type)
+			public Registration(ContainerBuilder builder, Type type, object instance)
 			{
 				this._Builder = builder;
 				this.Type = type;
+				this.Instance = instance;
+				ExternalOwned = instance != null;
 			}
 
 			public IRegistration As<T>()
@@ -62,6 +66,8 @@ namespace SingletonContainer
 
 			public KeyValuePair<ConstructorInfo, ParameterInfo[]> Create()
 			{
+				if (ExternalOwned) return _None;
+
 				var ctors = Type.GetConstructors();
 				var preferred = ctors.FirstOrDefault(c => c.GetCustomAttributes(typeof(PreferredConstructorAttribute)).Any());
 				if (preferred != null)
@@ -76,7 +82,7 @@ namespace SingletonContainer
 					if (ctor.Value.Length == 0)
 					{
 						Instance = _Builder.Invoke(ctor.Key, null, Type);
-						return default(KeyValuePair<ConstructorInfo, ParameterInfo[]>);
+						return _None;
 					}
 					return ctor;
 				}
@@ -180,9 +186,9 @@ namespace SingletonContainer
 			if (_Container == null) throw new ContainerNotBuiltException();
 		}
 
-		public IRegistration Register(Type type)
+		IRegistration Register(Type type, object instance)
 		{
-			var reg = new Registration(this, type);
+			var reg = new Registration(this, type, instance);
 			var node = new LinkedListNode<Registration>(reg);
 			lock (_Gate)
 			{
@@ -192,9 +198,18 @@ namespace SingletonContainer
 			}
 			return reg;
 		}
+		public IRegistration Register(Type type)
+		{
+			return Register(type, null);
+		}
 		public IRegistration Register<T>()
 		{
-			return Register(typeof(T));
+			return Register(typeof(T), null);
+		}
+		public IRegistration Register<T>(T instance)
+		{
+			if (instance == null) throw new ArgumentNullException("instance");
+			return Register(typeof(T), instance);
 		}
 		
 		public IContainer Container
@@ -215,8 +230,8 @@ namespace SingletonContainer
 			catch (TargetInvocationException e)
 			{
 				var created = _Unique
+					.Where(r => r.Instance != null && !r.ExternalOwned)
 					.Select(r => r.Instance)
-					.Where(o => o != null)
 					.ToList();
 
 				throw new ConstructorFaultedException(created, e.InnerException, type, ctor.GetParameters());
@@ -256,8 +271,8 @@ namespace SingletonContainer
 				.ToList();
 
 			var created = _Unique
+				.Where(r => r.Instance != null && !r.ExternalOwned)
 				.Select(r => r.Instance)
-				.Where(o => o != null)
 				.ToList();
 
 			return missing.Any() ? (DependencyException)

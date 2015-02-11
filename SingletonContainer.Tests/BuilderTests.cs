@@ -14,7 +14,11 @@ namespace SingletonContainer.Tests
 		internal class Dep1 : IDep {  }
 		internal class Dep2 : IDep {  }
 
-		internal class Dep3 { public Dep3(Dep1 d1) { } }
+		internal class Dep3
+		{
+			public Dep1 Dep1 { get; private set; }
+			public Dep3(Dep1 d1) { Dep1 = d1; }
+		}
 
 		internal class DepCycle1 { public DepCycle1(DepCycle2 d2) { } }
 		internal class DepCycle2 { public DepCycle2(DepCycle1 d1) { } }
@@ -311,6 +315,19 @@ namespace SingletonContainer.Tests
 
 			Assert.Same(builder.Build(), builder.Container);
 
+		}
+
+		[Fact]
+		public void ExternalInstances()
+		{
+			var d1 = new Dep1();
+			var builder = new ContainerBuilder();
+			builder.Register(d1);
+			builder.Register<Dep3>();
+			var container = builder.Build();
+
+			Assert.Same(d1, container.Resolve<Dep1>());
+			Assert.Same(d1, container.Resolve<Dep3>().Dep1);
 		}
 	}
 }
