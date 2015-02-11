@@ -9,7 +9,7 @@
     <projectUrl>https://github.com/cameronism/SingletonContainer</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Simple IoC container for singletons</description>
-    <releaseNotes>Initial release</releaseNotes>
+    <releaseNotes>Builder (optionally) automatically registers and creates missing dependencies.  Only supports "concrete" dependencies, not interface, not abstract.</releaseNotes>
     <copyright>Copyright 2015</copyright>
     <tags>ioc singleton</tags>
     <dependencies>
