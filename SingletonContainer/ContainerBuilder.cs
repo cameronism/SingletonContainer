@@ -251,7 +251,7 @@ namespace SingletonContainer
 			return true;
 		}
 
-		Exception GetSpecificError(LinkedList<RegistrationConstructor> theRest)
+		Exception GetSpecificError(LinkedList<RegistrationConstructor> theRest, bool autoRegisterMissing)
 		{
 			var missing = new HashSet<Type>();
 
@@ -264,6 +264,35 @@ namespace SingletonContainer
 						missing.Add(param.ParameterType);
 					}
 				}
+			}
+
+			if (autoRegisterMissing)
+			{
+				bool progress = false;
+
+				// see if we can create anything from missing
+				foreach (var t in missing)
+				{
+					if (t.IsInterface || t.IsAbstract) continue;
+
+					var maybe = new Registration(this, t, null);
+					_Registrations[t] = maybe;
+					progress = true;
+
+					var kvp = maybe.Create();
+					if (kvp.Key == null)
+					{
+						// success
+						_Unique.AddLast(maybe);
+						continue;
+					}
+
+					// better luck next time
+					var ctor = new RegistrationConstructor(kvp.Key, kvp.Value, maybe);
+					theRest.AddLast(ctor);
+				}
+
+				if (progress) return null;
 			}
 
 			var incomplete = theRest
@@ -280,7 +309,7 @@ namespace SingletonContainer
 				new DependencyCycleException(created, incomplete);
 		}
 
-		void Build(LinkedList<RegistrationConstructor> theRest)
+		void Build(LinkedList<RegistrationConstructor> theRest, bool autoRegisterMissing)
 		{
 			int count = theRest.Count;
 			var node = theRest.First;
@@ -307,7 +336,9 @@ namespace SingletonContainer
 
 				if (theRest.Count == count)
 				{
-					throw GetSpecificError(theRest);
+					// if exception is null then progress was made and we go around again
+					var ex = GetSpecificError(theRest, autoRegisterMissing);
+					if (ex != null) throw ex;
 				}
 
 				count = theRest.Count;
@@ -315,7 +346,7 @@ namespace SingletonContainer
 			}
 		}
 
-		public IContainer Build()
+		public IContainer Build(bool autoRegisterMissing = false)
 		{
 			VerifyNotBuilt();
 			var instances = new Dictionary<Type, object>(_Registrations.Count);
@@ -348,7 +379,7 @@ namespace SingletonContainer
 
 				if (needMore.Count > 0)
 				{
-					Build(needMore);
+					Build(needMore, autoRegisterMissing);
 				}
 
 				foreach (var kvp in _Registrations)

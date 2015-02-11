@@ -51,6 +51,9 @@ namespace SingletonContainer.Tests
 			}
 			public DepMultipleCtor2(Dep1 d, Dep2 d2) { }
 		}
+		class InterfaceDep { public InterfaceDep(IDep id) { } }
+		abstract class SoAbtract { }
+		class AbstractDep { public AbstractDep(SoAbtract sa) { } }
 
 		[Fact]
 		public void Register()
@@ -328,6 +331,55 @@ namespace SingletonContainer.Tests
 
 			Assert.Same(d1, container.Resolve<Dep1>());
 			Assert.Same(d1, container.Resolve<Dep3>().Dep1);
+		}
+
+		[Fact]
+		public void AutoRegisterMissing()
+		{
+			var builder = new ContainerBuilder();
+			builder.Register<DepK>();
+
+			Assert.DoesNotThrow(() => builder.Build(autoRegisterMissing: true));
+
+			var container = builder.Container;
+			var everything = container.OfType<object>();
+
+			Assert.Equal(12, everything.Count);
+
+			var expectedNames = new[] {
+				"Dep1",
+				"DepA",
+				"DepB",
+				"DepC",
+				"DepD",
+				"DepE",
+				"DepF",
+				"DepG",
+				"DepH",
+				"DepI",
+				"DepJ",
+				"DepK",
+			};
+
+			Assert.Equal(expectedNames, everything.Select(o => o.GetType().Name).ToArray());
+		}
+
+		[Fact]
+		public void AutoRegisterMissingInterfaceFail()
+		{
+			var builder = new ContainerBuilder();
+			builder.Register<InterfaceDep>();
+
+			Assert.Throws<DependencyMissingException>(() => builder.Build(autoRegisterMissing: true));
+		}
+
+		[Fact]
+		public void AutoRegisterMissingAbstractFail()
+		{
+			var builder = new ContainerBuilder();
+			builder.Register<AbstractDep>();
+
+			Assert.Throws<DependencyMissingException>(() => builder.Build(autoRegisterMissing: true));
 		}
 	}
 }
