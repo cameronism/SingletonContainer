@@ -197,7 +197,7 @@ namespace SingletonContainer.Tests
 			var d1 = new BuilderTests.Dep1();
 			var builder = new ContainerBuilder();
 			builder.Register(d1);
-			builder.Register<BuilderTests.Dep3>();
+			builder.Register(typeof(BuilderTests.Dep3));
 			builder.Register<BuilderTests.DepB>();
 
 			DependencyMissingException dme = null;
@@ -217,6 +217,39 @@ namespace SingletonContainer.Tests
 
 			Assert.Equal(1, dme.Created.Count);
 			Assert.IsType<BuilderTests.Dep3>(dme.Created[0]);
+		}
+
+		[Fact]
+		public void ExternalInstancesBoom()
+		{
+			var d1 = new BuilderTests.Dep1();
+			var builder = new ContainerBuilder();
+			builder.Register(d1);
+			builder.Register<GoBoom>();
+
+			ConstructorFaultedException dme = null;
+
+			Assert.Throws<ConstructorFaultedException>(() =>
+			{
+				try
+				{
+					builder.Build();
+				}
+				catch (ConstructorFaultedException e)
+				{
+					dme = e;
+					throw;
+				}
+			});
+
+			Assert.Equal(0, dme.Created.Count);
+		}
+
+		[Fact]
+		public void RegisterNullInstance()
+		{
+			var builder = new ContainerBuilder();
+			Assert.Throws<ArgumentNullException>(() => builder.Register<BuilderTests.Dep3>(null));
 		}
 	}
 }

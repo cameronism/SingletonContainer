@@ -230,7 +230,7 @@ namespace SingletonContainer
 			catch (TargetInvocationException e)
 			{
 				var created = _Unique
-					.Where(r => r.Instance != null && !r.ExternalOwned)
+					.Where(r => !r.ExternalOwned && r.Instance != null)
 					.Select(r => r.Instance)
 					.ToList();
 
@@ -271,7 +271,7 @@ namespace SingletonContainer
 				.ToList();
 
 			var created = _Unique
-				.Where(r => r.Instance != null && !r.ExternalOwned)
+				.Where(r => !r.ExternalOwned && r.Instance != null)
 				.Select(r => r.Instance)
 				.ToList();
 
